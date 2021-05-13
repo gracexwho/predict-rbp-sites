@@ -29,3 +29,5 @@ DNABERT
 EDeN
 /motifs/
 /motifs/*
+/.idea
+/__pycache__
