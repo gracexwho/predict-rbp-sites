@@ -4,14 +4,11 @@
 /3-new-12w-0.zip
 /4-new-12w-0.zip
 /iDeepS2-master
-/2_PARCLIP_AGO2MNASE_hg19
 /1_PARCLIP_AGO1234_hg19
 /motifs
 structure.gz
-/models
 /BERT
 /DNABERT
-/EDeN
 
 weblogo
 6-new-12w-0
@@ -19,14 +16,11 @@ weblogo
 3-new-12w-0.zip
 4-new-12w-0.zip
 iDeepS2-master
-2_PARCLIP_AGO2MNASE_hg19
 1_PARCLIP_AGO1234_hg19
 motifs
 structure.gz
-models
 BERT
 DNABERT
-EDeN
 /motifs/
 /motifs/*
 /.idea
