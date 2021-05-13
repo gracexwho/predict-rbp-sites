@@ -6,7 +6,6 @@
 /iDeepS2-master
 /1_PARCLIP_AGO1234_hg19
 /motifs
-structure.gz
 /BERT
 /DNABERT
 
@@ -17,8 +16,7 @@ weblogo
 4-new-12w-0.zip
 iDeepS2-master
 1_PARCLIP_AGO1234_hg19
-motifs
-structure.gz
+/structure.gz
 BERT
 DNABERT
 /motifs/
