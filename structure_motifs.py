@@ -454,6 +454,9 @@ def plot_filter_heat(param_matrix, out_pdf):
     plt.close()
 
 
+
+### TODO WEBLOGO IS ACTUALLY INSTALLED
+
 ################################################################################
 # plot_filter_logo
 #
@@ -514,6 +517,6 @@ def plot_score_density(f_scores, out_pdf):
 ################################################################################
 # __main__
 ################################################################################
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
     #pdb.runcall(main)

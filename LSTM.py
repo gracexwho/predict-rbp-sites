@@ -5,6 +5,8 @@ import random
 
 import subprocess as sp
 
+from tensorflow.python.keras.layers import Bidirectional, LSTM
+
 from rnashape_structure_without_memory_issue import run_rnashape
 
 import numpy as np
@@ -26,45 +28,23 @@ from structure_motifs import meme_intro
 
 
 ### TRAIN
-#### python comp401.py --train=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/training_sample_0/sequences.fa.gz --model_dir=models/transformers
+#### python LSTM.py --train=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/training_sample_0/sequences.fa.gz --model_dir=models/LSTM
 
 ### TEST
 ## before this: delete structure.gz because they need to do it again
-## python comp401.py --predict=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/test_sample_0/sequences.fa.gz --model_dir=models/transformers --out_file=prediction_transformers_2.txt
-## python comp401.py --predict=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/training_sample_0/sequences.fa.gz --model_dir=models/transformers --out_file=prediction_transformers_2.txt
+# python LSTM.py --predict=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/test_sample_0/sequences.fa.gz --model_dir=models/LSTM --out_file=prediction_LSTM_2.txt
+# python LSTM.py --predict=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/training_sample_0/sequences.fa.gz --model_dir=models/LSTM --out_file=prediction_LSTM_2.txt
 
 
 ### IDENTIFY MOTIFS
-## python comp401.py --motif=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/test_sample_0/sequences.fa.gz --model_dir=models/transformers --motif_dir=motifs
+## python LSTM.py --motif=True --data_file=2_PARCLIP_AGO2MNASE_hg19/30000/test_sample_0/sequences.fa.gz --model_dir=models/LSTM --motif_dir=motifs
 
 
-class TransformerBlock(layers.Layer):
-    def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1, **kwargs):
-        super(TransformerBlock, self).__init__()
-        self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
-        #self.ffn = tf.keras.Sequential(
-        #    [tf.layers.Dense(ff_dim, activation="relu"), tf.layers.Dense(embed_dim), ]
-        #)
-        self.ffn1 = layers.Dense(ff_dim, activation="relu")
-        self.ffn2 = layers.Dense(embed_dim)
-        self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)
-        self.layernorm2 = layers.LayerNormalization(epsilon=1e-6)
-        self.dropout1 = layers.Dropout(rate)
-        self.dropout2 = layers.Dropout(rate)
-
-    def call(self, inputs, training):
-        attn_output = self.att(inputs, inputs)
-        attn_output = self.dropout1(attn_output, training=training)
-        out1 = self.layernorm1(inputs + attn_output)
-        ffn_output = self.ffn1(out1)
-        ffn_output = self.ffn2(ffn_output)
-        ffn_output = self.dropout2(ffn_output, training=training)
-        return self.layernorm2(out1 + ffn_output)
 
 
 ### TODO: Major
 
-def final_transformers(data_file, model_dir, batch_size=50, nb_epoch=30):
+def final_LSTM(data_file, model_dir, batch_size=50, nb_epoch=30):
     training_data = load_data_file(data_file)
 
     seq_hid = 16
@@ -138,11 +118,13 @@ def final_transformers(data_file, model_dir, batch_size=50, nb_epoch=30):
 
     x = layers.concatenate([x_seq, x_struct])
 
-    ### get_transformers_network_2
+    ### ADD LSTM
+    x = Bidirectional(LSTM(2 * nbfilter))(x)
+    #transformer_block = TransformerBlock(embed_dim=32, num_heads=2, ff_dim=32)
+    #x = transformer_block(x)
 
-    transformer_block = TransformerBlock(embed_dim=32, num_heads=2, ff_dim=32)
-    x = transformer_block(x)
-    x = tf.keras.layers.Flatten()(x)   ##TODO
+
+    #x = tf.keras.layers.Flatten()(x)   ##TODO
     x = tf.keras.layers.Dropout(0.10)(x)
     x = tf.keras.layers.Dense(nbfilter * 2, activation='relu')(x)
 
@@ -156,7 +138,6 @@ def final_transformers(data_file, model_dir, batch_size=50, nb_epoch=30):
 
     model_outputs = tf.keras.layers.Dense(2, activation='softmax')(x)
 
-    ### TODO: possibly missing a layer to get from 50, 34, 2 -> 50, 2
 
     #### train_ideeps ####
     y, encoder = preprocess_labels(training_label)
@@ -165,7 +146,7 @@ def final_transformers(data_file, model_dir, batch_size=50, nb_epoch=30):
 
     model = tf.keras.Model(inputs=[model_inputs_seq, model_inputs_struct], outputs=model_outputs)
 
-    keras.utils.plot_model(model, "multi_input_and_output_model_transformers.png", show_shapes=True)
+    keras.utils.plot_model(model, "multi_input_and_output_model_LSTM.png", show_shapes=True)
 
     model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
@@ -175,15 +156,15 @@ def final_transformers(data_file, model_dir, batch_size=50, nb_epoch=30):
     #                             batch_size=batch_size, nb_epoch=nb_epoch)
     # def run_network_new(model, total_hid, training, y, validation, val_y, batch_size=50, nb_epoch=30):
 
-    earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=0)
+    #earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=0)
 
     print("SHAPE OF TRAINING DATA")
     print(np.shape(np.array(seq_train)))
     print(np.shape(np.array(struct_train)))
     print(np.shape(np.array(y)))
 
-    model.fit(x=[seq_train, struct_train], y=y, batch_size=batch_size, epochs=500, verbose=0, validation_data=(cnn_validation, val_y),
-                  callbacks=[earlystopper])
+    model.fit(x=[seq_train, struct_train], y=y, batch_size=batch_size, epochs=500, verbose=0, validation_data=(cnn_validation, val_y))
+                  #callbacks=[earlystopper])
 
     #x = layers.concatenate([title_features, body_features, tags_input])
 
@@ -255,54 +236,6 @@ def set_cnn_model(input_dim, input_length):
 
     return model
 
-
-
-def get_transformers_network_2():
-    nbfilter = 16
-    print('configure cnn network')
-
-    seq_model = set_cnn_model(4, 111).outputs[0]
-    struct_model = set_cnn_model(6, 111).outputs[0]
-
-    # print(tf.keras.backend.is_keras_tensor(seq_model))
-    # print(seq_model.shape)
-    # combined_model = tf.keras.Model(model_inputs, [seq_model, struct_model])
-
-    # model_inputs = tf.keras.Input(shape=(None,))
-    combined_model = tf.keras.layers.Concatenate(axis=-1)([seq_model, struct_model])
-
-    model_inputs = tf.keras.Input(shape=combined_model.shape)
-
-    # x = combined_model(model_inputs)
-    transformer_block = TransformerBlock(embed_dim=32, num_heads=2, ff_dim=32)
-    x = transformer_block(model_inputs)
-    x = tf.keras.layers.Dropout(0.10)(x)
-    model_outputs = tf.keras.layers.Dense(nbfilter * 2, activation='relu')(x)
-    model = tf.keras.Model(model_inputs, model_outputs)
-
-    model.summary()
-
-    # ~~~~~~~~~~~~~~~~~~~`
-    ## pdb.set_trace()
-    # model = Sequential()
-    # model.add(Concatenate([seq_model, struct_model]))
-
-    ## model.add(Merge([seq_model, struct_model], mode='concat', concat_axis=1))
-
-    ####model.add(Bidirectional(LSTM(2 * nbfilter)))
-
-    # batch_size = 50
-    # (50, ,  , 10)
-    # print("MODEL OUTPUT SHAPE JUST BEFORE TRANSFORMERS: ")
-    # print(model.output_shape)
-
-    # transformer_block = TransformerBlock(32, 2, 32)
-    # model.add(transformer_block)
-    # model.add(Dropout(0.10))
-    # model.add(Dense(nbfilter * 2, activation='relu'))
-    # print(model.output_shape)
-
-    return model
 
 
 
@@ -952,52 +885,8 @@ def split_training_validation(classes, validation_size=0.2, shuffle=False):
     return training_indice, training_label, validation_indice, validation_label
 
 
-def train_ideeps(data_file, model_dir, batch_size=50, nb_epoch=30):
-    training_data = load_data_file(data_file)
 
-    seq_hid = 16
-    struct_hid = 16
-    # pdb.set_trace()
-    train_Y = training_data["Y"]
-    print(len(train_Y))
-    # pdb.set_trace()
-    training_indice, training_label, validation_indice, validation_label = split_training_validation(train_Y)
-    # pdb.set_trace()
-
-    cnn_train = []
-    cnn_validation = []
-    seq_data = training_data["seq"][0]
-    # pdb.set_trace()
-    seq_train = seq_data[training_indice]
-    seq_validation = seq_data[validation_indice]
-    struct_data = training_data["seq"][1]
-    struct_train = struct_data[training_indice]
-    struct_validation = struct_data[validation_indice]
-    cnn_train.append(seq_train)
-    cnn_train.append(struct_train)
-    cnn_validation.append(seq_validation)
-    cnn_validation.append(struct_validation)
-
-
-    print("SHAPE OF INPUTS")
-    print("TRAINING SHAPE")
-    print(cnn_train.shape)
-    print(cnn_train[0].shape)
-
-    seq_net = get_transformers_network_2()
-    seq_data = []
-
-    y, encoder = preprocess_labels(training_label)
-    val_y, encoder = preprocess_labels(validation_label, encoder=encoder)
-
-    total_hid = seq_hid + struct_hid
-    model = run_network_new(seq_net, total_hid, cnn_train, y, validation=cnn_validation, val_y=val_y,
-                            batch_size=batch_size, nb_epoch=nb_epoch)
-
-    model.save(os.path.join(model_dir, 'model.pkl'))
-
-
-def test_ideeps(data_file, model_dir, outfile='prediction.txt', onlytest=True):
+def test_ideeps(data_file, model_dir, outfile='prediction_LSTM.txt', onlytest=True):
     test_data = load_data_file(data_file, onlytest=onlytest)
     #print(len(test_data))
     if not onlytest:
@@ -1013,20 +902,17 @@ def test_ideeps(data_file, model_dir, outfile='prediction.txt', onlytest=True):
     #model.summary()
 
     print("TESTING SHAPE")
-    #print(len(testing[1]))
     print(test_data.keys())
 
-    print(len(testing))
-    print(len(testing[0]))
-    print(len(testing[1]))
-
-    print(len(structure))
-    print(len(structure[0]))
 
     #d1 = tf.data.Dataset.from_tensor_slices(testing)
     #d2 = tf.data.Dataset.from_tensor_slices(structure)
     #zipped_input = tf.data.Dataset.zip((d1, d2)).batch(50)
     pred = model.predict(x=testing, batch_size=50)
+    #results = model.evaluate(x=testing, y=test_data["Y"], batch_size=50)
+
+    print("WHAT IS IN PRED")
+    print(pred[:5, :])
 
     fw = open(outfile, 'wb')
     myprob = "\n".join(map(str, pred[:, 1]))
@@ -1066,11 +952,11 @@ def run_ideeps(parser):
 
     if train:
         print('model training')
-        #train_ideeps(data_file, model_dir, batch_size=batch_size, nb_epoch=n_epochs)
-        final_transformers(data_file, model_dir, batch_size=batch_size, nb_epoch=n_epochs)
+        ##train_ideeps(data_file, model_dir, batch_size=batch_size, nb_epoch=n_epochs)
+        final_LSTM(data_file, model_dir, batch_size=batch_size, nb_epoch=n_epochs)
     else:
         print('model prediction')
-        test_ideeps(data_file, model_dir, outfile=out_file, onlytest=True)
+        test_ideeps(data_file, model_dir, outfile=out_file, onlytest=False)
 
     ### TODO
     if motif:
@@ -1086,7 +972,7 @@ def parse_arguments(parser):
                         help='The directory to save the trained models for future prediction')
     parser.add_argument('--predict', type=bool, default=False,
                         help='Predicting the RNA-protein binding sites for your input sequences, if using train, then it will be False')
-    parser.add_argument('--out_file', type=str, default='prediction.txt',
+    parser.add_argument('--out_file', type=str, default='prediction_LSTM.txt',
                         help='The output file used to store the prediction probability of testing data')
     parser.add_argument('--motif', type=bool, default=False, help='Identify motifs using CNNs.')
     parser.add_argument('--motif_dir', type=str, default='motifs', help='The directory to save the identified motifs.')
