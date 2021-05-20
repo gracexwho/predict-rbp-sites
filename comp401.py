@@ -42,9 +42,6 @@ class TransformerBlock(layers.Layer):
     def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1, **kwargs):
         super(TransformerBlock, self).__init__()
         self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
-        #self.ffn = tf.keras.Sequential(
-        #    [tf.layers.Dense(ff_dim, activation="relu"), tf.layers.Dense(embed_dim), ]
-        #)
         self.ffn1 = layers.Dense(ff_dim, activation="relu")
         self.ffn2 = layers.Dense(embed_dim)
         self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)

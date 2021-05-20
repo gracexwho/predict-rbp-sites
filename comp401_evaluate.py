@@ -3,28 +3,6 @@ import gzip
 import pdb
 import random
 
-import subprocess as sp
-
-from tensorflow.python.keras.layers import Bidirectional, LSTM
-
-from rnashape_structure_without_memory_issue import run_rnashape
-
-import numpy as np
-import tensorflow as tf
-from sklearn.preprocessing import LabelEncoder
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.models import load_model
-import os
-
-from tensorflow.python.keras.callbacks import EarlyStopping
-from tensorflow.python.keras.utils import np_utils
-
-
-from tensorflow.keras import backend as K
-import structure_motifs
-from structure_motifs import meme_intro
-
 from numpy import loadtxt
 from LSTM import read_seq
 from LSTM import read_structure

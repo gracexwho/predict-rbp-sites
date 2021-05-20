@@ -1,0 +1,6 @@
+[core]
+    remote = ssh-storage
+['remote "ssh-storage"']
+    url = ssh://sockeye.arc.ubc.ca/arc/home/gracexhu
+    user = gracexhu
+    port = 22
