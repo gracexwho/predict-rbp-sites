@@ -52,12 +52,16 @@ tf = read_txt("models/transformers/prediction_transformers.txt")
 lstm = read_txt("models/LSTM/prediction_LSTM.txt")
 labels = read_txt("data_y.txt")
 
+
+
+
 tf_1 = 0
 tf_0 = 0
 lstm_1 = 0
 lstm_0 = 0
 count_0 = 0
 count_1 = 0
+
 
 for index, l in enumerate(labels):
     if l == 0:
@@ -149,5 +153,15 @@ print("FALSE NEGATIVE LSTM: ", FN_lstm)
 
 print("SENSITIVITY TF: ", TP_tf / (TP_tf + FN_tf))
 print("SENSITIVITY LSTM: ", TP_lstm / (TP_lstm + FN_lstm))
+
+
+
+TN_tf = 1 - FN_tf
+TN_lstm = 1 - FN_lstm
+FP_tf = 1 - TP_tf
+FP_lstm = 1 - TP_lstm
+
+print("SPECIFICITY TF: ", TN_tf/(TN_tf+FP_tf))
+print("SPECIFICITY LSTM: ", TN_lstm/(TN_lstm+FP_lstm))
 
 
